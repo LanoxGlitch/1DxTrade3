@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synthetic Indices Scanner</title>
+
+<style>
+/* ==========================================================================
+   ROOT VARIABLES — Premium dark trading-terminal theme
+   ========================================================================== */
+:root{
+  --bg-app:        #0e1117;
+  --bg-panel:      #151922;
+  --bg-panel-alt:  #1a1f2b;
+  --bg-hover:      #1f2530;
+  --border-color:  #262c3a;
+  --border-soft:   #1e2330;
+
+  --text-primary:   #e7ebf3;
+  --text-secondary: #9aa4b7;
+  --text-muted:     #5f6779;
+
+  --accent-blue:    #3b82f6;
+  --accent-cyan:    #22d3ee;
+  --accent-green:   #26a69a;
+  --accent-red:     #ef5350;
+  --accent-amber:   #f0b90b;
+  --accent-purple:  #8b5cf6;
+
+  --grad-primary: linear-gradient(135deg, #3b82f6 0%, #22d3ee 100%);
+  --grad-danger:  linear-gradient(135deg, #ef5350 0%, #f0563e 100%);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.35);
+  --shadow-lg: 0 10px 34px rgba(0,0,0,0.45);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --transition-fast: 150ms ease;
+  --transition-med:  250ms cubic-bezier(0.4,0,0.2,1);
+
+  --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+/* ==========================================================================
+   RESET & BASE
+   ========================================================================== */
+*, *::before, *::after{ box-sizing: border-box; margin:0; padding:0; }
+
+html{ scroll-behavior: smooth; }
+
+body{
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar{ width: 8px; height: 8px; }
+::-webkit-scrollbar-track{ background: var(--bg-app); }
+::-webkit-scrollbar-thumb{ background: var(--border-color); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover{ background: var(--text-muted); }
+
+a{ color: inherit; text-decoration: none; }
+button{ font-family: inherit; cursor: pointer; }
+
+/* ==========================================================================
+   APP SHELL
+   ========================================================================== */
+.app-shell{
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+.app-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 24px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.brand{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark{
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--grad-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: #0e1117;
+  box-shadow: var(--shadow-sm);
+}
+
+.brand-text h1{
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.brand-text span{
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Responsive nav area */
+.main-nav{
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-panel-alt);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+}
+
+.main-nav button{
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.main-nav button:hover{
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.main-nav button.active{
+  background: var(--grad-primary);
+  color: #0e1117;
+}
+
+.header-meta{
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.connection-pill{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  box-shadow: 0 0 0 0 rgba(239,83,80,0.6);
+  animation: pulse-dot 2s infinite;
+}
+
+.status-dot.connected{
+  background: var(--accent-green);
+  box-shadow: 0 0 0 0 rgba(38,166,154,0.6);
+}
+
+.status-dot.connected{ animation: pulse-dot-green 2s infinite; }
+
+@keyframes pulse-dot{
+  0%   { box-shadow: 0 0 0 0 rgba(239,83,80,0.55); }
+  70%  { box-shadow: 0 0 0 7px rgba(239,83,80,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,83,80,0); }
+}
+
+@keyframes pulse-dot-green{
+  0%   { box-shadow: 0 0 0 0 rgba(38,166,154,0.55); }
+  70%  { box-shadow: 0 0 0 7px rgba(38,166,154,0); }
+  100% { box-shadow: 0 0 0 0 rgba(38,166,154,0); }
+}
+
+.last-update{
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.nav-toggle{
+  display: none;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   TOP STATUS BAR
+   ========================================================================== */
+.status-bar{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.status-item{
+  background: var(--bg-panel);
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background var(--transition-fast);
+}
+
+.status-item:hover{ background: var(--bg-panel-alt); }
+
+.status-label{
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.status-value{
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.status-value.state-live{ color: var(--accent-green); }
+.status-value.state-idle{ color: var(--accent-amber); }
+.status-value.state-off{ color: var(--accent-red); }
+
+/* ==========================================================================
+   MAIN DASHBOARD
+   ========================================================================== */
+.dashboard{
+  flex: 1;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+  align-content: start;
+}
+
+.card{
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--transition-med), box-shadow var(--transition-med), border-color var(--transition-med);
+  animation: card-in 420ms ease both;
+}
+
+.card:hover{
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: #313a4d;
+}
+
+@keyframes card-in{
+  from{ opacity: 0; transform: translateY(10px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+.card-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.card-title{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.card-icon{
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.icon-scanner   { background: rgba(59,130,246,0.15);  color: var(--accent-blue); }
+.icon-signals   { background: rgba(38,166,154,0.15);  color: var(--accent-green); }
+.icon-history   { background: rgba(139,92,246,0.15);  color: var(--accent-purple); }
+.icon-notify    { background: rgba(240,185,11,0.15);  color: var(--accent-amber); }
+.icon-status    { background: rgba(34,211,238,0.15);  color: var(--accent-cyan); }
+.icon-stats     { background: rgba(239,83,80,0.15);   color: var(--accent-red); }
+.icon-logs      { background: rgba(154,164,183,0.15); color: var(--text-secondary); }
+
+.card-badge{
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--bg-panel-alt);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--border-soft);
+}
+
+.card-body{
+  padding: 18px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 160px;
+}
+
+.placeholder-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-panel-alt);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  font-size: 12px;
+}
+
+.placeholder-row .label{ color: var(--text-secondary); }
+.placeholder-row .value{ font-family: var(--font-mono); color: var(--text-primary); font-weight: 600; }
+
+.empty-state{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  padding: 24px 10px;
+  text-align: center;
+}
+
+.empty-state .empty-icon{
+  font-size: 26px;
+  opacity: 0.5;
+}
+
+.empty-state .empty-text{
+  font-size: 12px;
+  max-width: 220px;
+}
+
+/* Scanner status specific mini meter */
+.mini-meter{
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-panel-alt);
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+}
+
+.mini-meter-fill{
+  height: 100%;
+  width: 0%;
+  background: var(--grad-primary);
+  border-radius: 999px;
+  transition: width var(--transition-med);
+}
+
+/* wide card spans two columns on large screens */
+.card.span-2{ grid-column: span 2; }
+
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
+.app-footer{
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.footer-links{
+  display: flex;
+  gap: 16px;
+}
+
+.footer-links a{ transition: color var(--transition-fast); }
+.footer-links a:hover{ color: var(--text-primary); }
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width: 1024px){
+  .status-bar{ grid-template-columns: repeat(3, 1fr); }
+  .card.span-2{ grid-column: span 1; }
+}
+
+@media (max-width: 860px){
+  .main-nav{
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    padding: 8px;
+    display: none;
+    box-shadow: var(--shadow-lg);
+    z-index: 99;
+  }
+  .main-nav.open{ display: flex; }
+  .main-nav button{ text-align: left; }
+  .nav-toggle{ display: inline-flex; align-items: center; justify-content: center; }
+  .header-meta .last-update{ display: none; }
+}
+
+@media (max-width: 640px){
+  .app-header{ padding: 12px 16px; }
+  .brand-text span{ display: none; }
+  .status-bar{ grid-template-columns: repeat(2, 1fr); }
+  .dashboard{ padding: 14px; grid-template-columns: 1fr; gap: 14px; }
+  .connection-pill span.pill-text{ display: none; }
+  .app-footer{ flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 400px){
+  .status-bar{ grid-template-columns: repeat(2, 1fr); }
+  .status-item{ padding: 10px 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ======================================================================
+       HEADER
+       ====================================================================== -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">SI</div>
+      <div class="brand-text">
+        <h1>Synthetic Indices Scanner</h1>
+        <span>Deriv Market Intelligence</span>
+      </div>
+    </div>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
+
+    <nav class="main-nav" id="mainNav">
+      <button class="active" data-nav="dashboard">Dashboard</button>
+      <button data-nav="signals">Signals</button>
+      <button data-nav="history">History</button>
+      <button data-nav="settings">Settings</button>
+      <button data-nav="logs">Logs</button>
+    </nav>
+
+    <div class="header-meta">
+      <div class="connection-pill">
+        <span class="status-dot" id="headerStatusDot"></span>
+        <span class="pill-text" id="headerStatusText">Disconnected</span>
+      </div>
+      <div class="last-update" id="headerLastUpdate">Last update: --:--:--</div>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       TOP STATUS BAR
+       ====================================================================== -->
+  <section class="status-bar" aria-label="System status bar">
+    <div class="status-item">
+      <span class="status-label">Connection</span>
+      <span class="status-value state-off" id="statConnection">Offline</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Current Time</span>
+      <span class="status-value" id="statTime">--:--:--</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Last Scan</span>
+      <span class="status-value" id="statLastScan">Never</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Symbols Tracked</span>
+      <span class="status-value" id="statSymbolCount">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Scanner State</span>
+      <span class="status-value state-idle" id="statScannerState">Idle</span>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       MAIN DASHBOARD — CARD GRID
+       ====================================================================== -->
+  <main class="dashboard" id="dashboardGrid">
+
+    <!-- Market Scanner -->
+    <section class="card span-2" id="cardMarketScanner">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon icon-scanner">◈</span>
+          Market Scanner
+        </div>
+        <span class="card-badge">Placeholder</span>
+      </div>
+      <div class="card-body">
+        <div class="empty-state">
+          <span class="empty-icon">📡</span>
+          <span class="empty-text">Live symbol scanning results will appear here once the market data engine is connected.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Signals -->
+    <section class="card" id="cardActiveSignals">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon icon-signals">⚡</span>
+          Active Signals
+        </div>
+        <span class="card-badge">0 Active</span>
+      </div>
+      <div class="card-body">
+        <div class="empty-state">
+          <span class="empty-icon">🎯</span>
+          <span class="empty-text">No active signals yet. Alerts will populate once strategy conditions are met.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signal History -->
+    <section class="card" id="cardSignalHistory">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon icon-history">🕘</span>
+          Signal History
+        </div>
+        <span class="card-badge">Placeholder</span>
+      </div>
+      <div class="card-body">
+        <div class="empty-state">
+          <span class="empty-icon">📜</span>
+          <span class="empty-text">Historical signal records will be listed here.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notifications -->
+    <section class="card" id="cardNotifications">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon icon-notify">🔔</span>
+          Notifications
+        </div>
+        <span class="card-badge">0 New</span>
+      </div>
+      <div class="card-body">
+        <div class="empty-state">
+          <span class="empty-icon">🔕</span>
+          <span class="empty-text">No notifications at the moment.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scanner Status -->
+    <section class="card" id="cardScannerStatus">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon icon-status">🛰</span>
+          Scanner Status
+        </div>
+        <span class="card-badge">Idle</span>
+      </div>
+      <div class="card-body">
+        <div class="placeholder-row">
+          <span class="label">Engine</span>
+          <span class="value">Not Started</span>
+        </div>
+        <div class="placeholder-row">
+          <span class="label">Symbols Configured</span>
+          <span class="value" id="scannerStatusSymbols">0</span>
+        </div>
+        <div class="placeholder-row">
+          <span class="label">Scan Interval</span>
+          <span class="value">--</span>
+        </div>
+        <div>
+          <div class="mini-meter"><div class="mini-meter-fill" id="scannerStatusMeter"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Statistics -->
+    <section class="card" id="cardStatistics">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon icon-stats">📊</span>
+          Statistics
+        </div>
+        <span class="card-badge">Placeholder</span>
+      </div>
+      <div class="card-body">
+        <div class="placeholder-row">
+          <span class="label">Total Signals</span>
+          <span class="value">0</span>
+        </div>
+        <div class="placeholder-row">
+          <span class="label">Win Rate</span>
+          <span class="value">--%</span>
+        </div>
+        <div class="placeholder-row">
+          <span class="label">Buy / Sell</span>
+          <span class="value">0 / 0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- System Logs -->
+    <section class="card span-2" id="cardSystemLogs">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="card-icon icon-logs">🗒</span>
+          System Logs
+        </div>
+        <span class="card-badge">Placeholder</span>
+      </div>
+      <div class="card-body">
+        <div class="empty-state">
+          <span class="empty-icon">🧾</span>
+          <span class="empty-text">System and diagnostic logs will be streamed here during operation.</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================
+       FOOTER
+       ====================================================================== -->
+  <footer class="app-footer">
+    <div>© 2026 Synthetic Indices Scanner — For informational purposes only. Not financial advice.</div>
+    <div class="footer-links">
+      <a href="#" data-footer="about">About</a>
+      <a href="#" data-footer="docs">Documentation</a>
+      <a href="#" data-footer="support">Support</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================================
+   SYNTHETIC INDICES SCANNER — APPLICATION SCRIPT (Stage 1: Foundation only)
+   ----------------------------------------------------------------------------
+   This stage wires up the static layout, theme, and empty manager classes.
+   No Deriv API, WebSocket, scanning, or indicator logic is implemented here.
+   Each manager below is a scaffold: methods are defined but intentionally
+   left empty (or returning safe defaults) for future stages to fill in.
+   ============================================================================ */
+
+(() => {
+  'use strict';
+
+  /* ==========================================================================
+     LOGGER
+     Central logging utility. Future stages will route scanner/connection
+     events here and render them into the "System Logs" card.
+     ========================================================================== */
+  class Logger {
+    constructor() {
+      this.entries = [];
+    }
+
+    /** Log an informational message. */
+    info(message, context) {
+      // TODO: implement structured logging + UI log rendering in a later stage.
+    }
+
+    /** Log a warning message. */
+    warn(message, context) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Log an error message. */
+    error(message, context) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Retrieve stored log entries. */
+    getEntries() {
+      return this.entries;
+    }
+
+    /** Clear all stored log entries. */
+    clear() {
+      // TODO: implement in a later stage.
+    }
+  }
+
+  /* ==========================================================================
+     CONNECTION MANAGER
+     Will own the Deriv WebSocket connection lifecycle in a future stage.
+     ========================================================================== */
+  class ConnectionManager {
+    constructor(logger) {
+      this.logger = logger;
+      this.isConnected = false;
+    }
+
+    /** Establish connection to the Deriv API. */
+    connect() {
+      // TODO: implement WebSocket connection logic in Stage 2.
+    }
+
+    /** Gracefully close the connection. */
+    disconnect() {
+      // TODO: implement in Stage 2.
+    }
+
+    /** Handle reconnection attempts. */
+    reconnect() {
+      // TODO: implement in Stage 2.
+    }
+
+    /** Send a request payload to the API. */
+    send(payload) {
+      // TODO: implement in Stage 2.
+    }
+
+    /** Return current connection state. */
+    getStatus() {
+      return this.isConnected;
+    }
+  }
+
+  /* ==========================================================================
+     SCANNER MANAGER
+     Will own the multi-symbol scanning loop and strategy evaluation.
+     ========================================================================== */
+  class ScannerManager {
+    constructor(logger) {
+      this.logger = logger;
+      this.symbols = [];
+      this.isRunning = false;
+    }
+
+    /** Start the scanning loop across configured symbols. */
+    start() {
+      // TODO: implement scanning loop in a later stage.
+    }
+
+    /** Stop the scanning loop. */
+    stop() {
+      // TODO: implement in a later stage.
+    }
+
+    /** Add a symbol to the scan list. */
+    addSymbol(symbol) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Remove a symbol from the scan list. */
+    removeSymbol(symbol) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Evaluate strategy conditions for a single symbol. */
+    evaluateSymbol(symbol) {
+      // TODO: implement EMA / indicator / condition logic in a later stage.
+    }
+
+    /** Return current scanner run state. */
+    getState() {
+      return this.isRunning;
+    }
+  }
+
+  /* ==========================================================================
+     NOTIFICATION MANAGER
+     Will handle in-app + external (e.g. Telegram) alert notifications.
+     ========================================================================== */
+  class NotificationManager {
+    constructor(logger) {
+      this.logger = logger;
+      this.notifications = [];
+    }
+
+    /** Push a new notification. */
+    notify(message, type) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Mark a notification as read. */
+    markAsRead(id) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Clear all notifications. */
+    clearAll() {
+      // TODO: implement in a later stage.
+    }
+
+    /** Get all stored notifications. */
+    getAll() {
+      return this.notifications;
+    }
+  }
+
+  /* ==========================================================================
+     SETTINGS MANAGER
+     Will manage user-configurable scanner/strategy settings and persistence.
+     ========================================================================== */
+  class SettingsManager {
+    constructor(logger) {
+      this.logger = logger;
+      this.settings = {};
+    }
+
+    /** Load settings from storage. */
+    load() {
+      // TODO: implement persistence in a later stage.
+    }
+
+    /** Save current settings to storage. */
+    save() {
+      // TODO: implement persistence in a later stage.
+    }
+
+    /** Get a single setting value. */
+    get(key) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Set a single setting value. */
+    set(key, value) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Reset settings to defaults. */
+    resetDefaults() {
+      // TODO: implement in a later stage.
+    }
+  }
+
+  /* ==========================================================================
+     STATISTICS MANAGER
+     Will compute and expose scanner/signal performance statistics.
+     ========================================================================== */
+  class StatisticsManager {
+    constructor(logger) {
+      this.logger = logger;
+      this.stats = {};
+    }
+
+    /** Record a new signal outcome into statistics. */
+    recordSignal(signal) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Compute aggregate statistics (win rate, totals, etc). */
+    computeStats() {
+      // TODO: implement in a later stage.
+    }
+
+    /** Reset all statistics. */
+    reset() {
+      // TODO: implement in a later stage.
+    }
+
+    /** Get current statistics snapshot. */
+    getSnapshot() {
+      return this.stats;
+    }
+  }
+
+  /* ==========================================================================
+     UI MANAGER
+     Owns rendering / DOM updates for the dashboard shell built in Stage 1.
+     Currently limited to: clock tick, nav toggle, and static placeholder
+     wiring. Future stages will extend this to render live scanner data,
+     signals, history, notifications, and logs into their respective cards.
+     ========================================================================== */
+  class UIManager {
+    constructor(logger) {
+      this.logger = logger;
+
+      // Cached DOM references used by this stage's static UI behavior.
+      this.elements = {
+        navToggle: document.getElementById('navToggle'),
+        mainNav: document.getElementById('mainNav'),
+        navButtons: document.querySelectorAll('.main-nav button'),
+        headerStatusDot: document.getElementById('headerStatusDot'),
+        headerStatusText: document.getElementById('headerStatusText'),
+        headerLastUpdate: document.getElementById('headerLastUpdate'),
+        statConnection: document.getElementById('statConnection'),
+        statTime: document.getElementById('statTime'),
+        statLastScan: document.getElementById('statLastScan'),
+        statSymbolCount: document.getElementById('statSymbolCount'),
+        statScannerState: document.getElementById('statScannerState'),
+      };
+    }
+
+    /** Wire up static, stage-1-only UI interactions (nav toggle, clock). */
+    init() {
+      this._bindNavToggle();
+      this._bindNavSelection();
+      this._startClock();
+    }
+
+    /** Toggle the mobile navigation menu open/closed. */
+    _bindNavToggle() {
+      const { navToggle, mainNav } = this.elements;
+      if (!navToggle || !mainNav) return;
+
+      navToggle.addEventListener('click', () => {
+        mainNav.classList.toggle('open');
+      });
+    }
+
+    /** Handle active-state switching between nav buttons (visual only). */
+    _bindNavSelection() {
+      const { navButtons, mainNav } = this.elements;
+      navButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          navButtons.forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          if (mainNav) mainNav.classList.remove('open');
+          // NOTE: actual view-switching logic will be implemented once
+          // corresponding sections/views are built in a later stage.
+        });
+      });
+    }
+
+    /** Keep the header/status-bar clock ticking every second. */
+    _startClock() {
+      const update = () => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+        if (this.elements.statTime) this.elements.statTime.textContent = timeStr;
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    /** Render connection status into header + status bar (placeholder-driven for now). */
+    renderConnectionStatus(isConnected) {
+      // TODO: fully implement once ConnectionManager provides real state in Stage 2.
+    }
+
+    /** Render scanner state into the status bar and Scanner Status card. */
+    renderScannerState(state) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Render active signals into the Active Signals card. */
+    renderSignals(signals) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Render signal history into the Signal History card. */
+    renderHistory(history) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Render notifications into the Notifications card. */
+    renderNotifications(notifications) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Render statistics into the Statistics card. */
+    renderStatistics(stats) {
+      // TODO: implement in a later stage.
+    }
+
+    /** Render system logs into the System Logs card. */
+    renderLogs(entries) {
+      // TODO: implement in a later stage.
+    }
+  }
+
+  /* ==========================================================================
+     APPLICATION BOOTSTRAP
+     Instantiates all managers and initializes the static UI. Future stages
+     will extend this bootstrap to start the connection + scanner pipeline.
+     ========================================================================== */
+  class Application {
+    constructor() {
+      this.logger = new Logger();
+      this.connectionManager = new ConnectionManager(this.logger);
+      this.scannerManager = new ScannerManager(this.logger);
+      this.notificationManager = new NotificationManager(this.logger);
+      this.settingsManager = new SettingsManager(this.logger);
+      this.statisticsManager = new StatisticsManager(this.logger);
+      this.uiManager = new UIManager(this.logger);
+    }
+
+    /** Initialize the application (Stage 1: static UI only). */
+    init() {
+      this.uiManager.init();
+      // Future stages: this.connectionManager.connect(), this.scannerManager.start(), etc.
+    }
+  }
+
+  // Bootstrap once DOM is ready.
+  document.addEventListener('DOMContentLoaded', () => {
+    const app = new Application();
+    app.init();
+  });
+
+})();
+</script>
+
+</body>
+</html>
